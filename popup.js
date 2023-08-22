@@ -1,42 +1,54 @@
-document.getElementById("button-sort").addEventListener('click', sortTabs);
+let sortCtrl;
+let labelCtrl;
+let hideCtrl;
+document.getElementById("button-group").addEventListener('click', sortTabs);
 document.getElementById("button-ungroup").addEventListener('click', ungroupTabs);
-Array.from(document.getElementsByTagName("button"))
-  .forEach(button => button.addEventListener('click', timeoutButton));
-
-function timeoutButton(e) {
-    let styleOBJ = e.target.style;
-    styleOBJ.opacity = 0;
-    styleOBJ.pointerEvents = "none";
-    setTimeout(() => {
-        styleOBJ.opacity = 100;
-        styleOBJ.pointerEvents = "auto";;
-    }, 1000);
-}
+document.addEventListener('DOMContentLoaded', function() {
+    sortCtrl = document.getElementById("sort");
+    labelCtrl = document.getElementById("label");
+    hideCtrl = document.getElementById("hide");
+});
 
 function sortTabs() {
-    chrome.tabs.query({}, tabs => {
-        sortTabsByComparer(tabs, compareAlpha);
-    });
+    if (sortCtrl.checked) {
+        chrome.tabs.query({}, tabs => {
+            sortTabsByComparer(tabs, compareAlpha);
+        });
+    }
     chrome.tabs.query({}, tabs => {
         groupTabs(tabs);
     });
 }
 
 function groupTabs(tabs) {
-    let threshold = 1; // group only if more than 1 same domain
-    let groupIds = {};
+    const threshold = 1; // group only if more than 1 same domain
+    const domainTabIds = {};
+    let groupDomains = [];
+
     for (let tab of tabs) {
-        let domain = disassembleTabURL(tab.url)[1];
-        groupIds[domain] || (groupIds[domain] = []);
-        groupIds[domain].push(tab.id);
+        let domain = getDomainFromURL(tab.url);
+        domainTabIds[domain] || (domainTabIds[domain] = []);
+        domainTabIds[domain].push(tab.id);
     }
-    for (let i in groupIds) {
-        if (groupIds[i].length > threshold) { 
+    for (let domain in domainTabIds) {
+        if (domainTabIds[domain].length > threshold) { 
             chrome.tabs.group({
-                tabIds: groupIds[i]
+                tabIds: domainTabIds[domain]
             })
+            groupDomains.push(domain);
         }
     }
+
+
+    chrome.tabGroups.query({}, groups => {
+        for (let index in groups) {
+            chrome.tabGroups.update(groups[index].id,
+            {
+                collapsed: hideCtrl.checked,
+                title: labelCtrl.checked ? groupDomains[index] : ''
+            })
+        }
+    })
 }
 
 function ungroupTabs() {
@@ -44,7 +56,6 @@ function ungroupTabs() {
         chrome.tabs.ungroup(tabs.map(tab => tab.id));
     });
 }
-
 
 function sortTabsByComparer(tabs, comparator) {
     let sorted = tabs.sort(comparator);
@@ -65,8 +76,15 @@ function compareAlpha(a, b) {
 }
 
 function disassembleTabURL(url) {
-    protocolRegex = /.*:\/\//;
-    domainRegex = /(?<=:\/\/).*?(?=\/)/;
-    pathRegex = /(?<=:\/\/.*)\/.*/;
+    const protocolRegex = /.*:\/\//;
+    const domainRegex = /(?<=:\/\/).*?(?=\/)/;
+    const pathRegex = /(?<=:\/\/.*)\/.*/;
+
     return [url.match(protocolRegex)[0], url.match(domainRegex)[0], url.match(pathRegex)[0]];
+}
+
+function getDomainFromURL(url) {
+    const domainRegex = /(?<=:\/\/).*?(?=\/)/;
+    url = url.match(domainRegex)[0];
+    return url.substring(0, url.lastIndexOf("."));
 }

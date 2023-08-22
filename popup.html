@@ -4,16 +4,26 @@
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
-        <header>
-            <h1>Tabby Sort</h1>
-        </header>
-        <div class="flex-container">
-            <button id="button-sort">SORT</button>
+        <div class="flex-col">
+            <div class="flex-row">
+                <button id="button-group">GROUP</button>
+                <button id="button-ungroup">UNGROUP</button>
+                <script src="popup.js"></script>
+            </div>
+            <div class="flex-row">
+                <div class="label-container">
+                    <label for="sort">Sort</label>
+                    <input id="sort" type="checkbox" checked="true">
+                </div>
+                <div class="label-container">
+                    <label for="label">Label</label>
+                    <input id="label" type="checkbox">
+                </div>
+                <div class="label-container">
+                    <label for="hide">Hide</label>
+                    <input id="hide" type="checkbox">
+                </div>
+            </div>
         </div>
-        <div class="flex-container">
-            <button id="button-ungroup">UNGROUP</button>
-        </div>
-        
-        <script src="popup.js"></script>
     </body>
 </html>
