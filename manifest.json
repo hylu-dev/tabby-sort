@@ -4,11 +4,10 @@
     "version": "1.0.0",
     "manifest_version": 3,
     "permissions": [
-        "cookies",
         "tabs",
         "tabGroups",
-        "activeTab",
-        "scripting"
+        "scripting",
+        "storage"
     ],
     "action": {
         "default_popup": "popup.html"
