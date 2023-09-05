@@ -33,11 +33,11 @@ function storeInputValue(e) {
 
 function sortTabs() {
     if (sortCtrl.checked) {
-        chrome.tabs.query({}, tabs => {
+        chrome.tabs.query({ currentWindow: true }, tabs => {
             sortTabsByComparer(tabs, compareAlpha);
         });
     }
-    chrome.tabs.query({}, tabs => {
+    chrome.tabs.query({ currentWindow: true }, tabs => {
         groupTabs(tabs);
     });
 }
@@ -45,7 +45,6 @@ function sortTabs() {
 function groupTabs(tabs) {
     const threshold = 1; // group only if more than 1 same domain
     const domainTabIds = {};
-    let groupDomains = [];
 
     // retrieve unique domains from tabs
     for (let tab of tabs) {
@@ -61,31 +60,37 @@ function groupTabs(tabs) {
             chrome.tabs.group({
                 tabIds: domainTabIds[domain]
             })
-            groupDomains.push([i, domain]);
-            i++;
         }
     }
 
-    const sortedGroupDomains = groupDomains.sort(
-        (a, b) => a[1] < b[1] ? 1 : -1
-    );
-
+    // const sortedGroupDomains = groupDomains.sort(
+    //     (a, b) => a[1] < b[1] ? 1 : -1
+    // );
     // collapse/title groups
     chrome.tabGroups.query({}, groups => {
-        for (let indexDomainPair of sortedGroupDomains) {
-            chrome.tabGroups.update(groups[indexDomainPair[0]].id,
-            {
-                collapsed: hideCtrl.checked,
-                title: labelCtrl.checked ? indexDomainPair[1] : '',
-                color: colors[0]
-            })
-            colors.push(colors.shift());
-            // move to end
-            if (sortCtrl.checked) chrome.tabGroups.move(groups[indexDomainPair[0]].id, {
-                index: -1
-            })
+        for (let group of groups) {
+            // query for domain name of first tab
+            chrome.tabs.query({ currentWindow: true, groupId: group.id }, tabs => {
+
+                let domain = getDomainFromURL(tabs[0].url);
+                chrome.tabGroups.update(group.id, {
+                    collapsed: hideCtrl.checked,
+                    title: labelCtrl.checked ? domain : '',
+                    color: colors[0]
+                })
+                colors.push(colors.shift());
+                // move to end
+                if (sortCtrl.checked) chrome.tabGroups.move(group.id, {
+                    index: -1
+                })
+
+            });
+
         }
     })
+
+
+
 }
 
 function sortGroups(e) {
